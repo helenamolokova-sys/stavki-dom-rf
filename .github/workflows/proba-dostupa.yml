@@ -1,0 +1,9 @@
+name: proba-dostupa
+on: workflow_dispatch
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -sL -m 40 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128 Safari/537.36" -o o.html -w "code=%{http_code} size=%{size_download}\n" "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/news/obzor-stavok-po-ipoteke-v-bankakh-na-23-sentyabrya-2026-goda/" || echo curl-fail
+          grep -o "Средневзвешенная ставка составляет[^.]*" o.html | head -2 || true
