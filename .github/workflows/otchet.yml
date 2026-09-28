@@ -1,0 +1,20 @@
+# Отчёт в тему 1206 (бот «Мониторинг ставок») при каждом пуше rates.json или trevoga.txt.
+# Рутина Claude пушит файл — этот workflow проверяет его и пишет в Telegram. Крона нет намеренно.
+name: otchet
+on:
+  push:
+    branches: [main]
+    paths: [rates.json, trevoga.txt]
+  workflow_dispatch:
+jobs:
+  otchet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 2 }
+      - name: Проверить и отправить
+        env:
+          TOKEN: ${{ secrets.STAVKI_BOT_TOKEN }}
+          CHAT: ${{ secrets.STAVKI_CHAT_ID }}
+          TOPIC: ${{ secrets.STAVKI_TOPIC_ID }}
+        run: python3 .github/otchet.py
