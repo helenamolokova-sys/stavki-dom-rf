@@ -1,0 +1,35 @@
+# Еженедельное обновление ставок: читает обзор СПРОСИ.ДОМ.РФ, проверяет, пишет rates.json
+# и сразу шлёт отчёт в тему 1206. Облачная рутина Claude не годится: её песочница не пускает
+# на спроси.дом.рф (проверено 28.09.2026). Крон GitHub опаздывает на часы — для недельных
+# ставок это не важно; попыток несколько, лишние выходят сразу («уже обновлено»).
+name: obnovit
+on:
+  schedule:
+    - cron: '17 9,13,17 * * 3'   # среда 12:17, 16:17, 20:17 мск
+    - cron: '17 7,13 * * 4,5'    # четверг и пятница 10:17, 16:17 мск — повтор и тревога
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: obnovit
+jobs:
+  obnovit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 2 }
+      - name: Прочитать обзор и обновить rates.json
+        run: python3 .github/obnovit.py
+      - name: Записать изменения
+        id: zapis
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then echo "izm=0" >> "$GITHUB_OUTPUT"; exit 0; fi
+          git config user.name "stavki-dom-rf" && git config user.email "actions@users.noreply.github.com"
+          git add -A && git commit -m "Ставки ДОМ.РФ: автообновление $(date -u +%F)" && git push
+          echo "izm=1" >> "$GITHUB_OUTPUT"
+      - name: Отчёт в тему 1206
+        if: steps.zapis.outputs.izm == '1'
+        env:
+          TOKEN: ${{ secrets.STAVKI_BOT_TOKEN }}
+          CHAT: ${{ secrets.STAVKI_CHAT_ID }}
+          TOPIC: ${{ secrets.STAVKI_TOPIC_ID }}
+        run: python3 .github/otchet.py
